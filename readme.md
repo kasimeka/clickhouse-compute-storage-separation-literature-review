@@ -61,13 +61,15 @@ for self-hosted environments, the standard method for using object storage is th
 
 ### the standard operation of RMT on S3
 
-since CH 22.8, writes to S3-backed RMT tables happen as follows:
+since CH 22.8, by default, writes to S3-backed RMT tables happen as follows:
 1. node A writes a part to S3
 2. node A informs the cluster via Keeper that a part was written
 3. node B (a replica) sees the "new part" metadata
 4. node B proceeds to download its data from node A over the network
 5. node B processes the data and uploads a new copy to a different path in the bucket
 6. node B acknowledges the replication in Keeper
+
+![RMT on S3 without zero-copy replication](https://altinity.com/wp-content/uploads/2024/05/MergeTree-S3-04-part-replication.png)
 
 this process
 - results in `n` copies of the data in S3 for a cluster with `n` replicas

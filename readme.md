@@ -101,7 +101,7 @@ to avoid the previously mentioned redundancies, zero-copy replication (`allow_re
 - single writer architecture in turn imposes the following limitations:
   1. no high availability, fault tolerance or _atomic_ failovers (old writer has to be fully shut down before a new one can attach tables),  tho Alexey created <https://github.com/ClickHouse/ClickHouse/issues/91613> to add support for stand-by writers that allow for zero-downtime failovers
   1. storage tiering, which would be of interest to prevent executing merges in S3, is a risk since only a single copy of hot data will be present on one node, and losing it will lose all hot data
-- mutations (`ALTER TABLE ... DELETE/UPDATE` queries) aren't supported, and all table migrations require creating new tables and copying data over to them, due to S3's lack of support for hard links and atomic renames (only released recently to S3 Express One Zone)
+- mutations (`ALTER TABLE ... DELETE/UPDATE` queries) aren't supported, and all table migrations require creating new tables and copying data over to them, due to S3's lack of support for hard links and atomic renames, emulating these functionalities for `plain_rewritable` storage was added to the ClickHouse 2026 roadmap <https://github.com/ClickHouse/ClickHouse/issues/91611>
 
 ### architecture
 

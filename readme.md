@@ -87,8 +87,8 @@ to avoid the previously mentioned redundancies, zero-copy replication (`allow_re
 
 ## the CH FOSS cutting edge: non-replicated MergeTree on s3_plain_rewritable storage
 
-<https://clickhouse.com/docs/operations/storing-data#s3-plain-rewritable-storage>
-<https://github.com/ClickHouse/ClickHouse/pull/79047>
+<https://clickhouse.com/docs/operations/storing-data#s3-plain-rewritable-storage>  
+<https://github.com/ClickHouse/ClickHouse/pull/79047>  
 
 `s3_plain_rewritable` disks store table data on s3 using standard, readable filenames instead of `s3`'s opaque blob ids and pointers, they also store all\[?\] metadata directly in S3 rather than on the local filesystem, making server nodes _theoretically_ stateless
 
@@ -99,7 +99,7 @@ to avoid the previously mentioned redundancies, zero-copy replication (`allow_re
   - in its current state, multiple writers can attach the same table simultaneously without coordination, leading to inconsistencies (writes by a specific node aren't automatically visible to other writers, without a restart) and -imo, not sure if proven- possible data corruption
   - as of v25.4, readonly MergeTree tables can be configured to poll their storage for metadata changes, allowing multiple readers to share the same `s3_plain_rewritable` disk and attach its tables
 - single writer architecture in turn imposes the following limitations:
-  1. no high availability, fault tolerance or _atomic_ failovers (old writer has to be fully shut down before a new one can attach tables)
+  1. no high availability, fault tolerance or _atomic_ failovers (old writer has to be fully shut down before a new one can attach tables),  tho Alexey created <https://github.com/ClickHouse/ClickHouse/issues/91613> to add support for stand-by writers that allow for zero-downtime failovers
   1. storage tiering, which would be of interest to prevent executing merges in S3, is a risk since only a single copy of hot data will be present on one node, and losing it will lose all hot data
 - mutations (`ALTER TABLE ... DELETE/UPDATE` queries) aren't supported, and all table migrations require creating new tables and copying data over to them, due to S3's lack of support for hard links and atomic renames (only released recently to S3 Express One Zone)
 

@@ -1,5 +1,5 @@
-<!-- markdownlint-disable line-length blanks-around-lists -->
-<!-- cspell: words clickhouse inodes lifecycles altinity NVME BYOC architectured Karpenter FOSS failovers roadmaps Alexey Milovidov -->
+<!-- markdownlint-disable line-length blanks-around-lists no-inline-html -->
+<!-- cspell: words clickhouse inodes lifecycles altinity NVME BYOC architectured Karpenter FOSS failovers roadmaps Alexey Milovidov swmr -->
 # state of compute-storage separation in clickhouse
 
 ## objective
@@ -38,7 +38,7 @@ the closed source, ClickHouseⓇ Inc. exclusive `SharedMergeTree` engine represe
    - they deploy a CH Cloud data plane (on an EKS cluster), prometheus stack, tailscale, etc. only their engineers can access this environment
    - they connect it to the central CH Cloud control plane for billing and management
 
-in conclusion `SharedMergeTree` is the correct architectural solution, but its distribution model and exclusivity make it non-viable
+in conclusion `SharedMergeTree` is the correct architectural solution, but its distribution model and exclusivity make it non-viable for self-hosted environments
 
 ## the future candidate: altinity antalya
 
@@ -79,6 +79,9 @@ this process
 ### the original plan for RMT on S3 (zero-copy replication)
 
 to avoid the previously mentioned redundancies, zero-copy replication (`allow_remote_fs_zero_copy_replication`) was introduced alongside remote storage backends and was initially on by default.
+
+![RMT on S3 with zero-copy replication](https://altinity.com/wp-content/uploads/2024/05/MergeTree-S3-05-zero-copy.png)
+
 - it allows a replica to simply update its local metadata to point to S3 objects written by other replicas, instead of downloading and re-uploading data
 - the initial implementation was unsound leading to data corruption and undefined consistency semantics.
   - the feature was turned off by default in v22.8 then re-marked as experimental in v25.8
@@ -111,6 +114,10 @@ the feature set and limitations of `s3_plain_rewritable` storage imposes a singl
 - all nodes are stateless and can be scaled independently with no overhead
   - writer statelessness is not documented/advertised so it's still _pending my investigation_
 
-this single-writer multi-reader architecture is not documented on clickhouse.com nor is it supported by / included on any ClickHouseⓇ Inc. roadmaps, it's pretty much a pet project of Alexey Milovidov
+<p align="center"><img
+  alt="s3_plain_rewritable single-writer multi-reader architecture diagram"
+  src="./clickhouse-swmr.drawio.svg"
+  style="max-width: 50%"
+/></p>
 
-<!-- TODO: ## recommendations and strategic roadmap -->
+this single-writer multi-reader architecture is not documented on clickhouse.com nor is it supported by / included on any ClickHouseⓇ Inc. roadmaps, it's pretty much a pet project of Alexey Milovidov

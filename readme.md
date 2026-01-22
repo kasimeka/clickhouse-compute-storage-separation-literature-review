@@ -96,7 +96,7 @@ to avoid the previously mentioned redundancies, zero-copy replication (`allow_re
 `s3_plain_rewritable` disks store table data on s3 using standard, readable filenames instead of `s3`'s opaque blob ids and pointers, they also store all metadata directly in S3 rather than on the local filesystem, making server nodes _theoretically_ stateless
 
 > [!NOTE]
-> since metadata is stored in S3 as 1~10 files per table, this setup isn’t cost efficient to scale the table count _infinitely_ because the cost of polling table metadata will add up significantly; for this use case only `SharedMergeTree` is viable. `s3_plain_rewritable` storage is only good for scaling a moderate number of tables to huge sizes, not the other way around.
+> since metadata is stored in S3 as 1~10 files per table, this setup isn’t cost efficient to _infinitely_ scale the table count because the cost of polling table metadata will add up significantly; for this use case only `SharedMergeTree` is viable. `s3_plain_rewritable` storage is only good for scaling a moderate number of tables to huge sizes, not the other way around.
 
 ### limitations
 

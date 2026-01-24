@@ -98,13 +98,13 @@ to avoid the previously mentioned redundancies, zero-copy replication (`allow_re
 > [!NOTE]
 > since metadata is stored in S3 as 1~10 files per table, this setup isn’t cost efficient to _infinitely_ scale the table count because the cost of polling table metadata will add up significantly; for this use case only `SharedMergeTree` is viable. `s3_plain_rewritable` storage is only good for scaling a moderate number of tables to huge sizes, not the other way around.
 
-### limitations
+### semantics
 
 - Keeper coordination is not supported for this storage backend, so
   - it can't be used with `ReplicatedMergeTree` engine tables
   - in its current state, multiple writers can attach the same table simultaneously without coordination, leading to inconsistencies (writes by a specific node aren't automatically visible to other writers, without a restart) and -imo, not sure if proven- possible data corruption
-  - as of v25.4, readonly MergeTree tables can be configured to poll their storage for metadata changes, allowing multiple readers to share the same `s3_plain_rewritable` disk and attach its tables
-- single writer architecture in turn imposes the following limitations:
+- as of v25.4, readonly MergeTree tables can be configured to poll their storage for metadata changes, allowing multiple readers to share the same `s3_plain_rewritable` disk and attach its tables
+- this single writer setup in turn imposes the following limitations:
   1. no high availability, fault tolerance or _atomic_ failovers (old writer has to be fully shut down before a new one can attach tables),  tho Alexey created <https://github.com/ClickHouse/ClickHouse/issues/91613> to add support for stand-by writers that allow for zero-downtime failovers
   1. storage tiering, which would be of interest to prevent executing merges in S3, is a risk since only a single copy of hot data will be present on one node, and losing it will lose all hot data
 - mutations (`ALTER TABLE ... DELETE/UPDATE` queries) aren't supported, and all table migrations require creating new tables and copying data over to them, due to S3's lack of support for hard links and atomic renames, emulating these functionalities for `plain_rewritable` storage was added to the ClickHouse 2026 roadmap <https://github.com/ClickHouse/ClickHouse/issues/91611>
@@ -113,9 +113,15 @@ to avoid the previously mentioned redundancies, zero-copy replication (`allow_re
 
 the feature set and limitations of `s3_plain_rewritable` storage imposes a single specific architecture:
 - one (and only one) writer node owns and manages the table lifecycle
+- there's no need for a Keeper cluster, since data and metadata are co-located on `s3_plain_rewritable` storage
 - multiple readonly reader nodes poll tables in S3 for metadata changes and attach/detach parts as needed
 - all nodes are stateless and can be scaled independently with no overhead
   - writer statelessness is not documented/advertised so it's still _pending my investigation_
+
+> [!NOTE]
+> this single-writer multi-reader architecture is not documented on clickhouse.com nor is it supported by / included on any ClickHouseⓇ Inc. roadmaps, it's pretty much a pet project of Alexey Milovidov
+
+#### true single-writer
 
 <p align="center"><img
   alt="s3_plain_rewritable single-writer multi-reader architecture diagram"
@@ -123,4 +129,10 @@ the feature set and limitations of `s3_plain_rewritable` storage imposes a singl
   style="max-width: 50%"
 /></p>
 
-this single-writer multi-reader architecture is not documented on clickhouse.com nor is it supported by / included on any ClickHouseⓇ Inc. roadmaps, it's pretty much a pet project of Alexey Milovidov
+#### single writer per-table
+
+<p align="center"><img
+  alt="s3_plain_rewritable single-writer-per-table architecture diagram"
+  src="./clickhouse-swmr-per-table.drawio.svg"
+  style="max-width: 50%"
+/></p>
